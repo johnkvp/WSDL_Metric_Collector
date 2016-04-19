@@ -27,6 +27,7 @@ import java.awt.Dimension;
 import javax.swing.JLabel;
 import javax.swing.JComboBox;
 import javax.swing.JButton;
+import java.awt.GridLayout;
 
 public class GUI extends JFrame {
 
@@ -37,7 +38,7 @@ public class GUI extends JFrame {
 	private JTable jTable_fileComparator;
 
 	private Vector<StringVector> wsdlMetrics;
-	
+
 	private File selectedDirectory;
 
 	/**
@@ -69,17 +70,94 @@ public class GUI extends JFrame {
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
-		
+
 		JComboBox<String> cbWSDLList = new JComboBox<String>();
 		cbWSDLList.setEnabled(false);
-		
+
 		JComboBox<Integer> cbWSDLToSkip = new JComboBox<Integer>();
 		cbWSDLToSkip.setEnabled(false);
-		
+
 		JButton btnCreateWekaFiles = new JButton("Create Weka File(s)");
 		btnCreateWekaFiles.setEnabled(false);
 		btnCreateWekaFiles.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+							
+			}
+		});
+
+		JMenuBar menuBar = new JMenuBar();
+		setJMenuBar(menuBar);
+
+		JMenu mnFile = new JMenu("File");
+		menuBar.add(mnFile);
+
+		JMenuItem mntmLoadWsdl = new JMenuItem("Load WSDL files");
+		mntmLoadWsdl.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JFileChooser chooser = new JFileChooser(); 
+				chooser.setCurrentDirectory(new java.io.File(".wsdl"));
+				chooser.setDialogTitle("Select folder where WSDL files are stored");
+
+				if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+					selectedDirectory = chooser.getCurrentDirectory();
+
+					cbWSDLList.removeAllItems();
+					File[] listOfFiles = selectedDirectory.listFiles();
+					int counterFiles = 0;
+					for (File file : listOfFiles) {
+						if (file.isFile()) {
+							cbWSDLList.addItem(file.getName());
+							counterFiles++;
+						}
+					}
+
+					cbWSDLToSkip.removeAllItems();
+					for(int i=0; i<counterFiles; i++){
+						cbWSDLToSkip.addItem(i);
+					}
+
+					if(defaultTableModel_fileComparator != null)
+						defaultTableModel_fileComparator.setDataVector(new String[][]{{}}, new String[]{});
+
+
+					btnCreateWekaFiles.setEnabled(true);
+					cbWSDLList.setEnabled(true);
+					cbWSDLToSkip.setEnabled(true);
+				}
+				else{
+					//			    	System.out.println("No Selection");
+				}
+			}
+		});
+		mnFile.add(mntmLoadWsdl);
+
+
+
+		JMenu mnConfig = new JMenu("Configuration");
+		menuBar.add(mnConfig);
+
+
+		JPanel panel = new JPanel();
+		mnConfig.add(panel);
+		panel.setLayout(new GridLayout(6, 1, 5, 5));
+
+		JLabel lblStartingWSDL = new JLabel("Select the last WSDL file to be processed before generate a Weka file");
+		panel.add(lblStartingWSDL);
+
+
+		panel.add(cbWSDLList);
+
+		JLabel lblInterval = new JLabel("Select the number of WSDL files to be skipped before generate a new Weka file");
+		panel.add(lblInterval);
+
+
+		panel.add(cbWSDLToSkip);
+
+		panel.add(btnCreateWekaFiles);
+
+		JMenuItem mntmCreateWekaFile = new JMenuItem("Create Weka File");
+		mntmCreateWekaFile.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
 				String wekaFile = "@RELATION wsdlFilesMetrics\n\n"
 						+ "@ATTRIBUTE Messages NUMERIC\n"
 						+ "@ATTRIBUTE PortTypes NUMERIC\n"
@@ -110,9 +188,9 @@ public class GUI extends JFrame {
 				defaultTableModel_fileComparator.addColumn("Operations");
 				defaultTableModel_fileComparator.addColumn("Coupling");
 				defaultTableModel_fileComparator.addColumn("Weka File Generated");
-				
+
 				jTable_fileComparator.setModel(defaultTableModel_fileComparator);
-				
+
 				/*
 				 * Center data in cells
 				 */
@@ -159,7 +237,7 @@ public class GUI extends JFrame {
 								+ wsdlMetrics.elementAt(1).size() + "," 
 								+ wsdlMetrics.elementAt(2).size() + ","
 								+ String.format("%.4f", ((float)wsdlMetrics.elementAt(1).size()/(float)wsdlMetrics.elementAt(2).size())) + "\n";
-						
+
 						java.util.Date date= new java.util.Date();
 						if(fileCounter == cbWSDLList.getSelectedIndex()){
 							fileManager.writeFile(selectedDirectory+"/WekaFiles/"+date.getTime()+".arff", wekaFile);
@@ -171,81 +249,17 @@ public class GUI extends JFrame {
 								skipCounter = fileCounter+(cbWSDLToSkip.getSelectedIndex()+1);
 							}
 						}
-						
+
 						fileCounter++;
 					}
-				}				
+				}	
 			}
 		});
-		
-		
-
-		JMenuBar menuBar = new JMenuBar();
-		setJMenuBar(menuBar);
-
-		JMenu mnFile = new JMenu("File");
-		menuBar.add(mnFile);
-
-		JMenuItem mntmLoadWsdl = new JMenuItem("Load WSDL files");
-		mntmLoadWsdl.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				JFileChooser chooser = new JFileChooser(); 
-			    chooser.setCurrentDirectory(new java.io.File(".wsdl"));
-			    chooser.setDialogTitle("Select folder where WSDL files are stored");
-			    
-			    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-			    	selectedDirectory = chooser.getCurrentDirectory();
-			    	
-			    	cbWSDLList.removeAllItems();
-			    	File[] listOfFiles = selectedDirectory.listFiles();
-			    	int counterFiles = 0;
-			    	for (File file : listOfFiles) {
-						if (file.isFile()) {
-							cbWSDLList.addItem(file.getName());
-							counterFiles++;
-						}
-			    	}
-			    	
-			    	cbWSDLToSkip.removeAllItems();
-			    	for(int i=0; i<counterFiles; i++){
-			    		cbWSDLToSkip.addItem(i);
-			    	}
-			    	
-			    	if(defaultTableModel_fileComparator != null)
-			    		defaultTableModel_fileComparator.setDataVector(new String[][]{{}}, new String[]{});
-					
-			    	
-			    	btnCreateWekaFiles.setEnabled(true);
-			    	cbWSDLList.setEnabled(true);
-			    	cbWSDLToSkip.setEnabled(true);
-			    }
-			    else{
-//			    	System.out.println("No Selection");
-			    }
-			}
-		});
-		mnFile.add(mntmLoadWsdl);
+		menuBar.add(mntmCreateWekaFile);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
-		
-		JPanel panel = new JPanel();
-		contentPane.add(panel, BorderLayout.NORTH);
-		
-		JLabel lblStartingWSDL = new JLabel("Select the last WSDL file to be processed before generate a Weka file");
-		panel.add(lblStartingWSDL);
-		
-		
-		panel.add(cbWSDLList);
-		
-		JLabel lblInterval = new JLabel("Select the number of WSDL files to be skipped before generate a new Weka file");
-		panel.add(lblInterval);
-		
-		
-		panel.add(cbWSDLToSkip);
-		
-		panel.add(btnCreateWekaFiles);
 
 		jTable_fileComparator = new JTable();
 		jTable_fileComparator.setFont(new Font("Verdana", Font.PLAIN, 16));
